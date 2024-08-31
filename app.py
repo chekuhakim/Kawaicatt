@@ -16,37 +16,77 @@ if api_token:
 
     # User inputs
     prompt = st.text_input("Enter your prompt:", "Illustration of C2T cat and cow on white background")
-    width = st.slider("Width:", min_value=256, max_value=1024, value=500, step=64)
-    height = st.slider("Height:", min_value=256, max_value=1024, value=500, step=64)
-    lora_scale = st.slider("LoRA Scale:", min_value=0.0, max_value=1.0, value=0.79, step=0.01)
-    guidance_scale = st.slider("Guidance Scale:", min_value=1.0, max_value=20.0, value=3.5, step=0.1)
+    
+    aspect_ratio = st.selectbox("Aspect Ratio:", 
+                                ["1:1", "16:9", "21:9", "3:2", "2:3", "4:5", "5:4", "3:4", "4:3", "9:16", "9:21", "custom"])
+    
+    if aspect_ratio == "custom":
+        col1, col2 = st.columns(2)
+        with col1:
+            width = st.number_input("Width:", min_value=256, max_value=1440, value=512, step=16)
+        with col2:
+            height = st.number_input("Height:", min_value=256, max_value=1440, value=512, step=16)
+    
+    num_outputs = st.slider("Number of outputs:", min_value=1, max_value=4, value=1)
+    lora_scale = st.slider("LoRA Scale:", min_value=-1.0, max_value=2.0, value=1.0, step=0.1)
     num_inference_steps = st.slider("Number of Inference Steps:", min_value=1, max_value=50, value=28)
+    
+    model = st.selectbox("Model:", ["dev", "schnell"])
+    
+    guidance_scale = st.slider("Guidance Scale:", min_value=0.1, max_value=10.0, value=3.5, step=0.1)
+    seed = st.number_input("Seed (optional):", value=-1, help="Set for reproducible generation. Leave as -1 for random seed.")
+    
+    extra_lora = st.text_input("Extra LoRA (optional):", 
+                               help="e.g., 'fofr/flux-pixar-cars' or HuggingFace/CivitAI URLs")
+    extra_lora_scale = st.slider("Extra LoRA Scale:", min_value=0.0, max_value=1.0, value=0.8, step=0.1)
+    
+    output_format = st.selectbox("Output Format:", ["webp", "jpg", "png"])
+    output_quality = st.slider("Output Quality:", min_value=0, max_value=100, value=80)
+    
+    disable_safety_checker = st.checkbox("Disable Safety Checker")
 
     if st.button("Generate Image"):
         with st.spinner("Generating image..."):
             try:
+                input_data = {
+                    "prompt": prompt,
+                    "aspect_ratio": aspect_ratio,
+                    "num_outputs": num_outputs,
+                    "lora_scale": lora_scale,
+                    "num_inference_steps": num_inference_steps,
+                    "model": model,
+                    "guidance_scale": guidance_scale,
+                    "output_format": output_format,
+                    "output_quality": output_quality,
+                    "disable_safety_checker": disable_safety_checker
+                }
+                
+                if aspect_ratio == "custom":
+                    input_data["width"] = width
+                    input_data["height"] = height
+                
+                if seed != -1:
+                    input_data["seed"] = seed
+                
+                if extra_lora:
+                    input_data["extra_lora"] = extra_lora
+                    input_data["extra_lora_scale"] = extra_lora_scale
+
                 output = replicate.run(
                     "chekuhakim/kawaiicat:2b65183c4bac425a42b14fc801833bace01f525df7f4a5970c77208a8a174780",
-                    input={
-                        "model": "dev",
-                        "width": width,
-                        "height": height,
-                        "prompt": prompt,
-                        "lora_scale": lora_scale,
-                        "num_outputs": 1,
-                        "aspect_ratio": "1:1",
-                        "output_format": "webp",
-                        "guidance_scale": guidance_scale,
-                        "output_quality": 80,
-                        "extra_lora_scale": 0.8,
-                        "num_inference_steps": num_inference_steps
-                    }
+                    input=input_data
                 )
                 
-                if output:
-                    st.image(output[0], caption="Generated Image", use_column_width=True)
+                # Debug: Print the raw output
+                st.write("Debug - Raw output:", output)
+
+                if output and isinstance(output, list):
+                    for i, img_url in enumerate(output):
+                        st.image(img_url, caption=f"Generated Image {i+1}", use_column_width=True)
+                elif output and isinstance(output, str):
+                    st.image(output, caption="Generated Image", use_column_width=True)
                 else:
-                    st.error("Failed to generate image. Please try again.")
+                    st.error("Failed to generate image. Unexpected output format.")
             except Exception as e:
                 st.error(f"An error occurred: {str(e)}")
 
