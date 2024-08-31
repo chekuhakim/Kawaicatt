@@ -6,7 +6,7 @@ import os
 st.set_page_config(page_title="Kawaii Cat Image Generator", page_icon="🐱")
 
 st.title("Kawaii Cat Image Generator")
-
+st.markdown('<input type="text" name="username" style="display:none">', unsafe_allow_html=True)
 # API Token input
 api_token = st.text_input("Enter your Replicate API Token:", type="password")
 
@@ -15,7 +15,7 @@ if api_token:
     os.environ["REPLICATE_API_TOKEN"] = api_token
 
     # User inputs
-    prompt = st.text_input("Enter your prompt:", "Illustration of C2T cat and cow on white background")
+    prompt = st.text_area("Enter your prompt:", "Illustration of C2T cat and cow on white background")
     
     aspect_ratio = st.selectbox("Aspect Ratio:", 
                                 ["1:1", "16:9", "21:9", "3:2", "2:3", "4:5", "5:4", "3:4", "4:3", "9:16", "9:21", "custom"])
