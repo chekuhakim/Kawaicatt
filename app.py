@@ -3,9 +3,9 @@ import replicate
 import os
 
 # Set page config
-st.set_page_config(page_title="Kawaii Cat Image Generator", page_icon="🐱")
+st.set_page_config(page_title="Image Generator", page_icon="🖼️")
 
-st.title("Kawaii Cat Image Generator")
+st.title("Image Generator")
 st.markdown('<input type="text" name="username" style="display:none">', unsafe_allow_html=True)
 # API Token input
 api_token = st.text_input("Enter your Replicate API Token:", type="password")
@@ -14,7 +14,20 @@ api_token = st.text_input("Enter your Replicate API Token:", type="password")
 if api_token:
     os.environ["REPLICATE_API_TOKEN"] = api_token
 
-    # User inputs
+    # Model selection
+    model_options = {
+        "Kawaii Cat": "chekuhakim/kawaiicat:2b65183c4bac425a42b14fc801833bace01f525df7f4a5970c77208a8a174780",
+        "Face Tuning": "chekuhakim/facetuning:0c1969354ea19f77d820dff199f6b3717f165f1f7215157ad49645a00fd166b1",
+        "Custom": "custom"
+    }
+    
+    selected_model = st.selectbox("Select Model:", list(model_options.keys()))
+    
+    if selected_model == "Custom":
+        custom_model = st.text_input("Enter custom model name:", 
+                                     help="Format: username/model:version")
+
+    # User inputs (keep all original inputs)
     prompt = st.text_area("Enter your prompt:", "Illustration of C2T cat and cow on white background")
     
     aspect_ratio = st.selectbox("Aspect Ratio:", 
@@ -72,8 +85,14 @@ if api_token:
                     input_data["extra_lora"] = extra_lora
                     input_data["extra_lora_scale"] = extra_lora_scale
 
+                # Determine which model to use
+                if selected_model == "Custom":
+                    model_path = custom_model
+                else:
+                    model_path = model_options[selected_model]
+
                 output = replicate.run(
-                    "chekuhakim/kawaiicat:2b65183c4bac425a42b14fc801833bace01f525df7f4a5970c77208a8a174780",
+                    model_path,
                     input=input_data
                 )
                 
